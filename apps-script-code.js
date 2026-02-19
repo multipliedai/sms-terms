@@ -8,13 +8,37 @@
  * 4. Copy the Web App URL and use it in optin.html
  */
 
+// Handle CORS preflight requests
+function doOptions() {
+  return ContentService
+    .createTextOutput('')
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeaders({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    });
+}
+
 function doPost(e) {
   try {
     // Get the active spreadsheet (the one this script is attached to)
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     
-    // Parse the incoming JSON data
-    const data = JSON.parse(e.postData.contents);
+    // Parse incoming data - handle both JSON and form-encoded data
+    let data;
+    if (e.postData.type === 'application/json') {
+      data = JSON.parse(e.postData.contents);
+    } else {
+      // Handle form-encoded data
+      const params = e.parameter;
+      data = {
+        name: params.name || '',
+        phone: params.phone || '',
+        consent: params.consent === 'true' || params.consent === true,
+        timestamp: params.timestamp || new Date().toISOString()
+      };
+    }
     
     // Extract form fields
     const name = data.name || '';
@@ -35,25 +59,35 @@ function doPost(e) {
       readableDate
     ]);
     
-    // Return success response
+    // Return success response with CORS headers
     return ContentService
       .createTextOutput(JSON.stringify({
         success: true,
         message: 'Consent submitted successfully'
       }))
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders({
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      });
       
   } catch (error) {
     // Log error for debugging
     Logger.log('Error: ' + error.toString());
     
-    // Return error response
+    // Return error response with CORS headers
     return ContentService
       .createTextOutput(JSON.stringify({
         success: false,
         error: error.toString()
       }))
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders({
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      });
   }
 }
 

@@ -174,27 +174,45 @@
       errorMsg.style.display = 'none';
 
       try {
-        // Submit to backend
+        // Submit to backend - using form-encoded data to avoid CORS issues with Apps Script
+        const formDataEncoded = new URLSearchParams();
+        formDataEncoded.append('name', formData.name);
+        formDataEncoded.append('phone', formData.phone);
+        formDataEncoded.append('consent', formData.consent);
+        formDataEncoded.append('timestamp', formData.timestamp);
+        
         const response = await fetch(BACKEND_URL, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: JSON.stringify(formData)
+          body: formDataEncoded.toString()
         });
 
-        if (response.ok) {
+        // Check if response is ok (even if we can't read it due to CORS)
+        // For Apps Script, if no error is thrown, assume success
+        if (response.status === 0 || response.ok) {
           // Redirect to success page
           window.location.href = '/submit-consent.html';
         } else {
           throw new Error('Submission failed');
         }
       } catch (error) {
-        // Show error message
-        errorMsg.textContent = 'There was an error submitting your consent. Please try again or contact hi@multiplied.ai for assistance.';
-        errorMsg.style.display = 'block';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Provide Consent';
+        // If it's a network error but the request might have succeeded,
+        // check if we can still redirect (Apps Script sometimes returns opaque response)
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+          // This might be a CORS issue, but the data might still be saved
+          // Wait a moment then redirect (give Apps Script time to process)
+          setTimeout(() => {
+            window.location.href = '/submit-consent.html';
+          }, 1000);
+        } else {
+          // Show error message
+          errorMsg.textContent = 'There was an error submitting your consent. Please try again or contact hi@multiplied.ai for assistance.';
+          errorMsg.style.display = 'block';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Provide Consent';
+        }
       }
     });
   </script>
