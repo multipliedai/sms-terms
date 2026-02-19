@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SMS Notification Consent — Multiplied.ai</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0;
+      background: #f5f7fa;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 760px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 32px 36px;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 28px;
+    }
+    p {
+      line-height: 1.6;
+    }
+    .notice {
+      background: #f0f4ff;
+      border-left: 4px solid #4f46e5;
+      padding: 16px;
+      margin: 24px 0;
+      border-radius: 6px;
+    }
+    label {
+      display: block;
+      margin-top: 18px;
+      font-weight: 600;
+    }
+    input[type="text"], input[type="tel"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 15px;
+    }
+    .checkbox {
+      margin-top: 22px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .checkbox input {
+      margin-top: 4px;
+    }
+    button {
+      margin-top: 28px;
+      padding: 14px 22px;
+      background: #111827;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #000000;
+    }
+    button:disabled {
+      background: #6b7280;
+      cursor: not-allowed;
+    }
+    .footer {
+      margin-top: 28px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    a {
+      color: #4f46e5;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Employee SMS Notification Consent</h1>
+
+    <p>
+      Multiplied.ai uses SMS messaging to send employees important reminders,
+      operational notifications, and responses to work-related inquiries.
+      Consent is required before SMS notifications can be enabled.
+    </p>
+
+    <div class="notice">
+      <strong>Program Details</strong><br/>
+      • Messages include reminders, alerts, and responses to employee questions<br/>
+      • Message frequency: Up to 5 messages per day (frequency varies based on activity)<br/>
+      • Message and data rates may apply<br/>
+      • Reply STOP to opt out at any time<br/>
+      • Reply HELP for assistance
+    </div>
+
+    <form id="consentForm">
+      
+      <label for="name">Employee Name</label>
+      <input type="text" id="name" name="name" required />
+
+      <label for="phone">Mobile Phone Number</label>
+      <input type="tel" id="phone" name="phone" placeholder="+1 555 555 5555" required />
+
+      <div class="checkbox">
+        <input type="checkbox" id="consent" name="consent" required />
+        <label for="consent">
+          I agree to receive SMS notifications from Multiplied.ai regarding
+          work-related reminders and operational updates. I understand I may receive
+          up to 5 messages per day. Msg & data rates may apply. Reply STOP to opt out, HELP for help.
+          I confirm that I am an employee and the owner of the phone number provided.
+        </label>
+      </div>
+
+      <div id="errorMessage" style="display: none; color: #dc2626; margin-top: 16px; padding: 12px; background: #fef2f2; border-radius: 6px;"></div>
+
+      <button type="submit" id="submitBtn">Provide Consent</button>
+    </form>
+
+    <div class="footer">
+      By submitting this form, you acknowledge and agree to the
+      <a href="https://www.multiplied.ai/privacy-policy" target="_blank">Privacy Policy</a>
+      and
+      <a href="https://smsterms.multiplied.ai" target="_blank">SMS Terms & Conditions</a>.
+    </div>
+  </div>
+
+  <script>
+    // CONFIGURATION: Google Sheets + Apps Script Backend
+    // 
+    // Setup Instructions:
+    // 1. Create a Google Sheet with columns: Name, Phone, Consent, Timestamp, Date
+    // 2. Go to Extensions → Apps Script
+    // 3. Copy the code from apps-script-code.js into the editor
+    // 4. Deploy → New deployment → Web app
+    // 5. Set "Who has access" to "Anyone"
+    // 6. Copy the Web App URL and paste it below
+    // 
+    // See GOOGLE_SHEETS_SETUP.md for detailed step-by-step instructions
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbw2hJqvmiTJ8c29680OQQghOgpO9aXTfWN06BBca04w0bPYqRel5N3wkJQdV9OSdGrkpQ/exec';
+    
+    // Example URL format: 'https://script.google.com/macros/s/AKfycby.../exec'
+
+    document.getElementById('consentForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const form = e.target;
+      const submitBtn = document.getElementById('submitBtn');
+      const errorMsg = document.getElementById('errorMessage');
+      
+      // Get form data
+      const formData = {
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        consent: document.getElementById('consent').checked,
+        timestamp: new Date().toISOString()
+      };
+
+      // Disable button and show loading
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      errorMsg.style.display = 'none';
+
+      try {
+        // Submit to backend
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+          // Redirect to success page
+          window.location.href = '/submit-consent.html';
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (error) {
+        // Show error message
+        errorMsg.textContent = 'There was an error submitting your consent. Please try again or contact hi@multiplied.ai for assistance.';
+        errorMsg.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Provide Consent';
+      }
+    });
+  </script>
+</body>
+</html>
